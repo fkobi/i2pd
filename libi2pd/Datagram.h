@@ -116,7 +116,7 @@ namespace datagram
 			std::shared_ptr<const i2p::data::LeaseSet> m_RemoteLeaseSet;
 			std::shared_ptr<i2p::garlic::GarlicRoutingSession> m_RoutingSession;
 			std::vector<std::weak_ptr<i2p::garlic::GarlicRoutingSession> > m_PendingRoutingSessions;
-			std::vector<std::shared_ptr<I2NPMessage> > m_SendQueue;
+			std::vector<std::shared_ptr<const I2NPMessage> > m_SendQueue;
 			uint64_t m_LastUse, m_LastFlush; // milliseconds
 			bool m_RequestingLS;
 			DatagramVersion m_Version;

@@ -99,6 +99,14 @@ namespace garlic
 		return msg;
 	}
 
+	std::vector<std::shared_ptr<I2NPMessage> > GarlicRoutingSession::WrapMultipleMessages (const std::vector<std::shared_ptr<const I2NPMessage> >& msgs)
+	{
+		std::vector<std::shared_ptr<I2NPMessage> > ret;
+		for (auto& msg: msgs)
+			ret.push_back (WrapSingleMessage(msg));
+		return ret;
+	}	
+		
 	ElGamalAESSession::ElGamalAESSession (GarlicDestination * owner,
 		std::shared_ptr<const i2p::data::RoutingDestination> destination, int numTags, bool attachLeaseSet):
 		GarlicRoutingSession (owner, attachLeaseSet),

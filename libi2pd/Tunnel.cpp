@@ -320,11 +320,11 @@ namespace tunnel
 		}
 	}
 
-	void OutboundTunnel::SendTunnelDataMsgTo (const uint8_t * gwHash, uint32_t gwTunnel, std::shared_ptr<i2p::I2NPMessage> msg)
+	TunnelMessageBlock OutboundTunnel::CreateTunnelMessageBlock (const uint8_t * gwHash, uint32_t gwTunnel)
 	{
 		TunnelMessageBlock block;
 		block.tunnelID = 0; // Initialize tunnelID to a default value
-	
+		
 		if (gwHash)
 		{
 			block.hash = gwHash;
@@ -342,7 +342,12 @@ namespace tunnel
 		{
 			block.deliveryType = eDeliveryTypeLocal;
 		}
-	
+		return block;
+	}	
+		
+	void OutboundTunnel::SendTunnelDataMsgTo (const uint8_t * gwHash, uint32_t gwTunnel, std::shared_ptr<i2p::I2NPMessage> msg)
+	{
+		auto block = CreateTunnelMessageBlock (gwHash, gwTunnel);
 		block.data = msg;
 		SendTunnelDataMsgs({block});
 	}
@@ -355,6 +360,18 @@ namespace tunnel
 		m_Gateway.SendBuffer ();
 	}
 
+	void OutboundTunnel::SendTunnelDataMsgsTo (const uint8_t * gwHash, uint32_t gwTunnel, const std::vector<std::shared_ptr<i2p::I2NPMessage> >& msgs)
+	{
+		auto block = CreateTunnelMessageBlock (gwHash, gwTunnel);
+		std::unique_lock<std::mutex> l(m_SendMutex);
+		for (auto& it : msgs)
+		{
+			block.data = it;
+			m_Gateway.PutTunnelDataMsg (block);
+		}	
+		m_Gateway.SendBuffer ();
+	}	
+		
 	void OutboundTunnel::HandleTunnelDataMsg (std::shared_ptr<i2p::I2NPMessage>&& tunnelMsg)
 	{
 		LogPrint (eLogError, "Tunnel: Incoming message for outbound tunnel ", GetTunnelID ());
@@ -404,6 +421,19 @@ namespace tunnel
 		}
 	}
 
+	void ZeroHopsOutboundTunnel::SendTunnelDataMsgsTo (const uint8_t * gwHash, uint32_t gwTunnel,
+		const std::vector<std::shared_ptr<i2p::I2NPMessage> >& msgs)
+	{
+		auto block = CreateTunnelMessageBlock (gwHash, gwTunnel);
+		std::vector<TunnelMessageBlock> blocks;
+		for (auto& it: msgs)
+		{
+			block.data = it;
+			blocks.push_back (block);
+		}	
+		SendTunnelDataMsgs (blocks);
+	}	
+		
 	Tunnels tunnels;
 
 	Tunnels::Tunnels (): m_IsRunning (false), m_Thread (nullptr), m_MaxNumTransitTunnels (DEFAULT_MAX_NUM_TRANSIT_TUNNELS),

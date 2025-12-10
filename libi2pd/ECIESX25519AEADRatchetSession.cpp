@@ -971,6 +971,53 @@ namespace garlic
 		if (!payload) return nullptr;
 		size_t len = CreatePayload (msg, m_State != eSessionStateEstablished, payload);
 		if (!len) return nullptr;
+		return WrapPayload (payload, len);
+	}
+
+	std::vector<std::shared_ptr<I2NPMessage> > ECIESX25519AEADRatchetSession::WrapMultipleMessages (const std::vector<std::shared_ptr<const I2NPMessage> >& msgs)
+	{
+		if (m_State != eSessionStateEstablished)
+			return GarlicRoutingSession::WrapMultipleMessages (msgs);
+		
+		std::vector<std::shared_ptr<I2NPMessage> > ret;
+		if (!msgs.empty ())
+		{
+			ret.push_back (WrapSingleMessage (msgs[0]));
+			if (msgs.size () > 1)
+			{	
+				uint8_t * payload = GetOwner ()->GetPayloadBuffer ();
+				size_t len = 0;
+				auto it = msgs.begin (); it++;
+				while (it != msgs.end ())
+				{
+					if (*it != nullptr)
+					{
+						if ((*it)->GetPayloadLength () + 45 + len > ECIESX25519_OPTIMAL_PAYLOAD_SIZE)
+						{
+							auto paddingSize = GetNextPaddingSize (len);
+							if (paddingSize)
+								len += CreatePaddingClove (paddingSize, payload + len, I2NP_MAX_MESSAGE_SIZE - len);
+							ret.push_back (WrapPayload (payload, len));
+							len = 0;
+						}
+						len += CreateGarlicClove (*it, payload + len, I2NP_MAX_MESSAGE_SIZE - len);
+					}
+					it++;
+				}
+				if (len > 0)
+				{	
+					auto paddingSize = GetNextPaddingSize (len);
+					if (paddingSize)
+						len += CreatePaddingClove (paddingSize, payload + len, I2NP_MAX_MESSAGE_SIZE - len);
+					ret.push_back (WrapPayload (payload, len));
+				}	
+			}
+		}
+		return ret;
+	}
+		
+	std::shared_ptr<I2NPMessage> ECIESX25519AEADRatchetSession::WrapPayload (const uint8_t * payload, size_t len)
+	{		
 #if OPENSSL_PQ
 		auto m = NewI2NPMessage (len + (m_State == eSessionStateEstablished ? 28 :
 			i2p::crypto::GetMLKEMPublicKeyLen (m_RemoteStaticKeyType) + 116));
@@ -1095,23 +1142,9 @@ namespace garlic
 		uint8_t paddingSize = 0;
 		if (payloadLen || ts > m_LastSentTimestamp + ECIESX25519_SEND_INACTIVITY_TIMEOUT)
 		{
-			int delta = (int)ECIESX25519_OPTIMAL_PAYLOAD_SIZE - (int)payloadLen;
-			if (delta < 0 || delta > 3) // don't create padding if we are close to optimal size
-			{
-				paddingSize = m_PaddingSizes[m_NextPaddingSize++] & 0x0F; // 0 - 15
-				if (m_NextPaddingSize >= 32)
-				{
-					RAND_bytes (m_PaddingSizes, 32);
-					m_NextPaddingSize = 0;
-				}
-				if (delta > 3)
-				{
-					delta -= 3;
-					if (paddingSize >= delta) paddingSize %= delta;
-				}
-				paddingSize++;
+			paddingSize = GetNextPaddingSize (payloadLen);
+			if (paddingSize)
 				payloadLen += paddingSize + 3;
-			}
 		}
 		if (payloadLen)
 		{
@@ -1191,15 +1224,33 @@ namespace garlic
 			}
 			// padding
 			if (paddingSize)
-			{
-				payload[offset] = eECIESx25519BlkPadding; offset++;
-				htobe16buf (payload + offset, paddingSize); offset += 2;
-				memset (payload + offset, 0, paddingSize); offset += paddingSize;
-			}
+				offset += CreatePaddingClove (paddingSize, payload + offset, payloadLen - offset);
 		}
 		return payloadLen;
 	}
 
+	uint8_t ECIESX25519AEADRatchetSession::GetNextPaddingSize (size_t payloadLen)
+	{
+		uint8_t paddingSize = 0;
+		int delta = (int)ECIESX25519_OPTIMAL_PAYLOAD_SIZE - (int)payloadLen;
+		if (delta < 0 || delta > 3) // don't create padding if we are close to optimal size
+		{
+			paddingSize = m_PaddingSizes[m_NextPaddingSize++] & 0x0F; // 0 - 15
+			if (m_NextPaddingSize >= 32)
+			{
+				RAND_bytes (m_PaddingSizes, 32);
+				m_NextPaddingSize = 0;
+			}
+			if (delta > 3)
+			{
+				delta -= 3;
+				if (paddingSize >= delta) paddingSize %= delta;
+			}
+			paddingSize++;
+		}
+		return paddingSize;
+	}	
+		
 	size_t ECIESX25519AEADRatchetSession::CreateGarlicClove (std::shared_ptr<const I2NPMessage> msg, uint8_t * buf, size_t len)
 	{
 		if (!msg) return 0;
@@ -1250,6 +1301,14 @@ namespace garlic
 		return cloveSize + 3;
 	}
 
+	size_t ECIESX25519AEADRatchetSession::CreatePaddingClove (uint8_t paddingSize, uint8_t * buf, size_t len)
+	{
+		buf[0] = eECIESx25519BlkPadding;
+		htobe16buf (buf + 1, paddingSize);
+		memset (buf + 3, 0, paddingSize);
+		return paddingSize + 3;
+	}	
+		
 	void ECIESX25519AEADRatchetSession::GenerateMoreReceiveTags (std::shared_ptr<ReceiveRatchetTagSet> receiveTagset, int numTags)
 	{
 		if (GetOwner ())

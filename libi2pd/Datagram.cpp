@@ -740,18 +740,13 @@ namespace datagram
 	void DatagramSession::FlushSendQueue ()
 	{
 		if (m_SendQueue.empty ()) return;
-		std::vector<i2p::tunnel::TunnelMessageBlock> send;
 		auto routingPath = GetSharedRoutingPath();
 		// if we don't have a routing path we will drop all queued messages
 		if(routingPath && routingPath->outboundTunnel && routingPath->remoteLease)
 		{
-			for (const auto & msg : m_SendQueue)
-			{
-				auto m = m_RoutingSession->WrapSingleMessage(msg);
-				if (m)
-					send.push_back(i2p::tunnel::TunnelMessageBlock{i2p::tunnel::eDeliveryTypeTunnel,routingPath->remoteLease->tunnelGateway, routingPath->remoteLease->tunnelID, m});
-			}
-			routingPath->outboundTunnel->SendTunnelDataMsgs(send);
+			auto msgs = m_RoutingSession->WrapMultipleMessages (m_SendQueue);
+			if (!msgs.empty ())
+				routingPath->outboundTunnel->SendTunnelDataMsgsTo (routingPath->remoteLease->tunnelGateway, routingPath->remoteLease->tunnelID, msgs);
 		}
 		m_SendQueue.clear();
 	}

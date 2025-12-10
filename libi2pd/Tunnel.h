@@ -143,6 +143,7 @@ namespace tunnel
 				Tunnel (config), m_Gateway (*this), m_EndpointIdentHash (config->GetLastIdentHash ()) {};
 
 			void SendTunnelDataMsgTo (const uint8_t * gwHash, uint32_t gwTunnel, std::shared_ptr<i2p::I2NPMessage> msg);
+			virtual void SendTunnelDataMsgsTo (const uint8_t * gwHash, uint32_t gwTunnel, const std::vector<std::shared_ptr<i2p::I2NPMessage> >& msgs);
 			virtual void SendTunnelDataMsgs (const std::vector<TunnelMessageBlock>& msgs); // multiple messages
 			const i2p::data::IdentHash& GetEndpointIdentHash () const { return m_EndpointIdentHash; };
 			virtual size_t GetNumSentBytes () const { return m_Gateway.GetNumSentBytes (); };
@@ -153,6 +154,10 @@ namespace tunnel
 			bool IsInbound() const override { return false; }
 			bool Recreate () override;
 
+		protected:
+
+			static TunnelMessageBlock CreateTunnelMessageBlock (const uint8_t * gwHash, uint32_t gwTunnel); 
+			
 		private:
 
 			std::mutex m_SendMutex;
@@ -203,6 +208,7 @@ namespace tunnel
 		public:
 
 			ZeroHopsOutboundTunnel ();
+			void SendTunnelDataMsgsTo (const uint8_t * gwHash, uint32_t gwTunnel, const std::vector<std::shared_ptr<i2p::I2NPMessage> >& msgs) override;
 			void SendTunnelDataMsgs (const std::vector<TunnelMessageBlock>& msgs) override;
 			size_t GetNumSentBytes () const override { return m_NumSentBytes; };
 
