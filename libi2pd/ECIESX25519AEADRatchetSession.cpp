@@ -992,7 +992,7 @@ namespace garlic
 				{
 					if (*it != nullptr)
 					{
-						if ((*it)->GetPayloadLength () + 45 + len > ECIESX25519_OPTIMAL_PAYLOAD_SIZE)
+						if ((*it)->GetPayloadLength () + 13 + len > ECIESX25519_OPTIMAL_PAYLOAD_SIZE)
 						{
 							auto paddingSize = GetNextPaddingSize (len);
 							if (paddingSize)
@@ -1000,7 +1000,7 @@ namespace garlic
 							ret.push_back (WrapPayload (payload, len));
 							len = 0;
 						}
-						len += CreateGarlicClove (*it, payload + len, I2NP_MAX_MESSAGE_SIZE - len);
+						len += CreateGarlicClove (*it, payload + len, I2NP_MAX_MESSAGE_SIZE - len, true);
 					}
 					it++;
 				}
@@ -1251,7 +1251,8 @@ namespace garlic
 		return paddingSize;
 	}	
 		
-	size_t ECIESX25519AEADRatchetSession::CreateGarlicClove (std::shared_ptr<const I2NPMessage> msg, uint8_t * buf, size_t len)
+	size_t ECIESX25519AEADRatchetSession::CreateGarlicClove (std::shared_ptr<const I2NPMessage> msg, 
+		uint8_t * buf, size_t len, bool alwaysLocal)
 	{
 		if (!msg) return 0;
 		uint16_t cloveSize = msg->GetPayloadLength () + 9 + 1;
@@ -1260,7 +1261,7 @@ namespace garlic
 		buf[0] = eECIESx25519BlkGalicClove; // clove type
 		htobe16buf (buf + 1, cloveSize); // size
 		buf += 3;
-		if (m_Destination)
+		if (!alwaysLocal && m_Destination)
 		{
 			*buf = (eGarlicDeliveryTypeDestination << 5);
 			memcpy (buf + 1, *m_Destination, 32); buf += 32;
