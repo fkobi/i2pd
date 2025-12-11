@@ -433,7 +433,9 @@ namespace garlic
 		return ret;
 	}
 
-	GarlicDestination::GarlicDestination (): m_NumTags (32), // 32 tags by default
+	GarlicDestination::GarlicDestination ():
+		m_Rng(i2p::util::GetMonotonicMicroseconds () % 1000000LL),
+		m_NumTags (32), // 32 tags by default
 		m_PayloadBuffer (nullptr), m_LastIncomingSessionTimestamp (0), 
 		m_NumRatchetInboundTags (0) // 0 means standard
 	{

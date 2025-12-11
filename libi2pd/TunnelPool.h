@@ -15,7 +15,6 @@
 #include <utility>
 #include <mutex>
 #include <memory>
-#include <random>
 #include "Identity.h"
 #include "LeaseSet.h"
 #include "RouterInfo.h"
@@ -118,8 +117,6 @@ namespace tunnel
 			// for overriding tunnel peer selection
 			std::shared_ptr<const i2p::data::RouterInfo> SelectNextHop (std::shared_ptr<const i2p::data::RouterInfo> prevHop, bool reverse, bool endpoint) const;
 			bool StandardSelectPeers(Path & path, int numHops, bool inbound, SelectHopFunc nextHop);
-
-			std::mt19937& GetRng () { return m_Rng; }
 			
 		private:
 
@@ -153,8 +150,6 @@ namespace tunnel
 
 			int m_MinLatency = 0; // if > 0 this tunnel pool will try building tunnels with minimum latency by ms
 			int m_MaxLatency = 0; // if > 0 this tunnel pool will try building tunnels with maximum latency by ms
-
-			std::mt19937 m_Rng;
 			
 		public:
 

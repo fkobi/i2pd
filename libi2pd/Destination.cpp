@@ -585,7 +585,7 @@ namespace client
 			m_PublishReplyToken = 0;
 			// schedule verification
 			m_PublishVerificationTimer.expires_from_now (boost::posix_time::seconds(PUBLISH_VERIFICATION_TIMEOUT +
-				(m_Pool ? m_Pool->GetRng ()() % PUBLISH_VERIFICATION_TIMEOUT_VARIANCE : 0)));
+				GetRng ()() % PUBLISH_VERIFICATION_TIMEOUT_VARIANCE));
 			m_PublishVerificationTimer.async_wait (std::bind (&LeaseSetDestination::HandlePublishVerificationTimer,
 			shared_from_this (), std::placeholders::_1));
 		}
@@ -946,7 +946,7 @@ namespace client
 			CleanupRemoteLeaseSets ();
 			CleanupDestination ();
 			m_CleanupTimer.expires_from_now (boost::posix_time::seconds (DESTINATION_CLEANUP_TIMEOUT +
-				(m_Pool ? m_Pool->GetRng ()() % DESTINATION_CLEANUP_TIMEOUT_VARIANCE : 0)));
+				GetRng ()() % DESTINATION_CLEANUP_TIMEOUT_VARIANCE));
 			m_CleanupTimer.async_wait (std::bind (&LeaseSetDestination::HandleCleanupTimer,
 				shared_from_this (), std::placeholders::_1));
 		}

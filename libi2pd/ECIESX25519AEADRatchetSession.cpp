@@ -7,7 +7,6 @@
 */
 
 #include <string.h>
-#include <openssl/sha.h>
 #include "Log.h"
 #include "util.h"
 #include "Crypto.h"
@@ -182,7 +181,6 @@ namespace garlic
 		GarlicRoutingSession (owner, true), m_RemoteStaticKeyType (0)
 	{
 		if (!attachLeaseSetNS) SetLeaseSetUpdateStatus (eLeaseSetUpToDate);
-		RAND_bytes (m_PaddingSizes, 32); m_NextPaddingSize = 0;
 	}
 
 	ECIESX25519AEADRatchetSession::~ECIESX25519AEADRatchetSession ()
@@ -1235,12 +1233,7 @@ namespace garlic
 		int delta = (int)ECIESX25519_OPTIMAL_PAYLOAD_SIZE - (int)payloadLen;
 		if (delta < 0 || delta > 3) // don't create padding if we are close to optimal size
 		{
-			paddingSize = m_PaddingSizes[m_NextPaddingSize++] & 0x0F; // 0 - 15
-			if (m_NextPaddingSize >= 32)
-			{
-				RAND_bytes (m_PaddingSizes, 32);
-				m_NextPaddingSize = 0;
-			}
+			paddingSize = GetOwner ()->GetRng ()() % 16; // 0 - 15
 			if (delta > 3)
 			{
 				delta -= 3;

@@ -16,6 +16,7 @@
 #include <thread>
 #include <mutex>
 #include <memory>
+#include <random>
 #include "Crypto.h"
 #include "I2NPProtocol.h"
 #include "LeaseSet.h"
@@ -243,6 +244,7 @@ namespace garlic
 			~GarlicDestination ();
 
 			void CleanUp ();
+			std::mt19937& GetRng () { return m_Rng; };
 			void SetNumTags (int numTags) { m_NumTags = numTags; };
 			int GetNumTags () const { return m_NumTags; };
 			void SetNumRatchetInboundTags (int numTags) { m_NumRatchetInboundTags = numTags; };
@@ -303,6 +305,7 @@ namespace garlic
 
 		private:
 
+			std::mt19937 m_Rng;
 			// outgoing sessions
 			int m_NumTags;
 			std::mutex m_SessionsMutex;

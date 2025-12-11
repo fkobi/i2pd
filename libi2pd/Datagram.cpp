@@ -667,11 +667,7 @@ namespace datagram
 					{
 						int idx = -1;
 						if (m_LocalDestination)
-						{
-							auto pool = m_LocalDestination->GetTunnelPool ();
-							if (pool)
-								idx = pool->GetRng ()() % sz;
-						}
+							idx = m_LocalDestination->GetRng ()() % sz;
 						if (idx < 0) idx = rand () % sz;
 						path->remoteLease = ls[idx];
 					}
@@ -700,11 +696,7 @@ namespace datagram
 				{
 					int idx = -1;
 					if (m_LocalDestination)
-					{
-						auto pool = m_LocalDestination->GetTunnelPool ();
-						if (pool)
-							idx = pool->GetRng ()() % sz;
-					}
+						idx = m_LocalDestination->GetRng ()() % sz;
 					if (idx < 0) idx = rand () % sz;
 					path->remoteLease = ls[idx];
 				}

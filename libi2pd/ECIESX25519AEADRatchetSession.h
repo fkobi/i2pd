@@ -248,7 +248,6 @@ namespace garlic
 			std::list<std::pair<uint16_t, int> > m_AckRequests; // incoming (tagsetid, index)
 			bool m_SendReverseKey = false, m_SendForwardKey = false, m_IsTerminated = false;
 			std::unique_ptr<DHRatchet> m_NextReceiveRatchet, m_NextSendRatchet;
-			uint8_t m_PaddingSizes[32], m_NextPaddingSize;
 
 			uint64_t m_LastAckRequestSendTime = 0; // milliseconds
 			uint32_t m_AckRequestMsgID = 0; 

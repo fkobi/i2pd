@@ -2401,13 +2401,7 @@ namespace stream
 
 	uint32_t StreamingDestination::GetRandom ()
 	{
-		if (m_Owner)
-		{	
-			auto pool = m_Owner->GetTunnelPool ();
-			if (pool) 
-				return pool->GetRng ()();
-		}
-		return rand ();
+		return m_Owner ? m_Owner->GetRng ()() : rand ();
 	}	
 }
 }

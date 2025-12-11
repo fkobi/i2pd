@@ -45,8 +45,7 @@ namespace tunnel
 		m_NumInboundHops (numInboundHops), m_NumOutboundHops (numOutboundHops),
 		m_NumInboundTunnels (numInboundTunnels), m_NumOutboundTunnels (numOutboundTunnels),
 		m_InboundVariance (inboundVariance), m_OutboundVariance (outboundVariance),
-		m_IsActive (true), m_IsHighBandwidth (isHighBandwidth), m_CustomPeerSelector(nullptr), 
-		m_Rng(i2p::util::GetMonotonicMicroseconds ()%1000000LL)
+		m_IsActive (true), m_IsHighBandwidth (isHighBandwidth), m_CustomPeerSelector(nullptr)
 	{
 		if (m_NumInboundTunnels > TUNNEL_POOL_MAX_INBOUND_TUNNELS_QUANTITY)
 			m_NumInboundTunnels = TUNNEL_POOL_MAX_INBOUND_TUNNELS_QUANTITY;
@@ -60,7 +59,7 @@ namespace tunnel
 			m_InboundVariance = (m_NumInboundHops < STANDARD_NUM_RECORDS) ? STANDARD_NUM_RECORDS - m_NumInboundHops : 0;
 		if (m_OutboundVariance > 0 && m_NumOutboundHops + m_OutboundVariance > STANDARD_NUM_RECORDS)
 			m_OutboundVariance = (m_NumOutboundHops < STANDARD_NUM_RECORDS) ? STANDARD_NUM_RECORDS - m_NumOutboundHops : 0;
-		m_NextManageTime = i2p::util::GetSecondsSinceEpoch () + m_Rng () % TUNNEL_POOL_MANAGE_INTERVAL;
+		m_NextManageTime = i2p::util::GetSecondsSinceEpoch () + rand () % TUNNEL_POOL_MANAGE_INTERVAL;
 	}
 
 	TunnelPool::~TunnelPool ()
@@ -229,7 +228,7 @@ namespace tunnel
 		typename TTunnels::value_type excluded, i2p::data::RouterInfo::CompatibleTransports compatible)
 	{
 		if (tunnels.empty ()) return nullptr;
-		uint32_t ind = m_Rng () % (tunnels.size ()/2 + 1), i = 0;
+		uint32_t ind = i2p::tunnel::tunnels.GetRng ()() % (tunnels.size ()/2 + 1), i = 0;
 		bool skipped = false;
 		typename TTunnels::value_type tunnel = nullptr;
 		for (const auto& it: tunnels)
@@ -249,7 +248,7 @@ namespace tunnel
 		}
 		if (!tunnel && skipped)
 		{
-			ind = m_Rng () % (tunnels.size ()/2 + 1), i = 0;
+			ind = i2p::tunnel::tunnels.GetRng ()() % (tunnels.size ()/2 + 1), i = 0;
 			for (const auto& it: tunnels)
 			{
 				if (it->IsEstablished () && it != excluded)
@@ -403,7 +402,7 @@ namespace tunnel
 				if (it->IsEstablished ())
 					outboundTunnels.push_back (it);
 		}
-		std::shuffle (outboundTunnels.begin(), outboundTunnels.end(), m_Rng);
+		std::shuffle (outboundTunnels.begin(), outboundTunnels.end(), tunnels.GetRng ());
 		std::vector<std::shared_ptr<InboundTunnel> > inboundTunnels;
 		{
 			std::unique_lock<std::mutex> l(m_InboundTunnelsMutex);
@@ -411,7 +410,7 @@ namespace tunnel
 				if (it->IsEstablished ())
 					inboundTunnels.push_back (it);
 		}
-		std::shuffle (inboundTunnels.begin(), inboundTunnels.end(), m_Rng);
+		std::shuffle (inboundTunnels.begin(), inboundTunnels.end(), tunnels.GetRng ());
 		auto it1 = outboundTunnels.begin ();
 		auto it2 = inboundTunnels.begin ();
 		while (it1 != outboundTunnels.end () && it2 != inboundTunnels.end ())
@@ -470,7 +469,7 @@ namespace tunnel
 		{
 			CreateTunnels ();
 			TestTunnels ();
-			m_NextManageTime = ts + TUNNEL_POOL_MANAGE_INTERVAL + (m_Rng () % TUNNEL_POOL_MANAGE_INTERVAL)/2;
+			m_NextManageTime = ts + TUNNEL_POOL_MANAGE_INTERVAL + (tunnels.GetRng ()() % TUNNEL_POOL_MANAGE_INTERVAL)/2;
 		}
 	}
 
@@ -635,7 +634,7 @@ namespace tunnel
 			numHops = m_NumInboundHops;
 			if (m_InboundVariance)
 			{
-				int offset = m_Rng () % (std::abs (m_InboundVariance) + 1);
+				int offset = tunnels.GetRng ()() % (std::abs (m_InboundVariance) + 1);
 				if (m_InboundVariance < 0) offset = -offset;
 				numHops += offset;
 			}
@@ -645,7 +644,7 @@ namespace tunnel
 			numHops = m_NumOutboundHops;
 			if (m_OutboundVariance)
 			{
-				int offset = m_Rng () % (std::abs (m_OutboundVariance) + 1);
+				int offset = tunnels.GetRng ()() % (std::abs (m_OutboundVariance) + 1);
 				if (m_OutboundVariance < 0) offset = -offset;
 				numHops += offset;
 			}
