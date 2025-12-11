@@ -118,7 +118,7 @@ namespace tunnel
 			bool LatencyFitsRange(int lowerbound, int upperbound) const;
 
 			bool LatencyIsKnown() const { return m_Latency != UNKNOWN_LATENCY; }
-			bool IsSlow () const { return LatencyIsKnown() && m_Latency > HIGH_LATENCY_PER_HOP*GetNumHops (); }
+			bool IsSlow () const;
 
 			/** visit all hops we currently store */
 			void VisitTunnelHops(TunnelHopVisitor v);

@@ -1284,6 +1284,11 @@ namespace transport
 		}
 	}
 
+	int Transports::GetLocalDelay () const
+	{
+		return (i2p::context.GetStatus () == eRouterStatusProxy) ? 1000 : 0; // 1 sec for proxy. TODO: implement param
+	}	
+		
 	bool Transports::IsInReservedRange (const boost::asio::ip::address& host) const 
 	{
 		return IsCheckReserved () && i2p::util::net::IsInReservedRange (host);

@@ -263,6 +263,12 @@ namespace tunnel
 		m_State = state;
 	}
 
+	bool Tunnel::IsSlow () const 
+	{ 
+		return LatencyIsKnown() && m_Latency > HIGH_LATENCY_PER_HOP*GetNumHops () +
+			i2p::transport::transports.GetLocalDelay ()*1000; 
+	}
+	
 	void Tunnel::VisitTunnelHops(TunnelHopVisitor v)
 	{
 		// hops are in inverted order, we must return in direct order

@@ -142,7 +142,9 @@ namespace transport
 
 			bool IsOnline() const { return m_IsOnline; };
 			void SetOnline (bool online);
-
+		
+			int GetLocalDelay () const; // in millseconds
+			
 			auto& GetService () { return *m_Service; };
 			std::shared_ptr<i2p::crypto::X25519Keys> GetNextX25519KeysPair ();
 			void ReuseX25519KeysPair (std::shared_ptr<i2p::crypto::X25519Keys> pair);
