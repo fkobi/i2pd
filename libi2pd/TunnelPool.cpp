@@ -228,7 +228,7 @@ namespace tunnel
 		typename TTunnels::value_type excluded, i2p::data::RouterInfo::CompatibleTransports compatible)
 	{
 		if (tunnels.empty ()) return nullptr;
-		uint32_t ind = i2p::tunnel::tunnels.GetRng ()() % (tunnels.size ()/2 + 1), i = 0;
+		uint32_t ind = (m_LocalDestination ? m_LocalDestination->GetRng ()() : rand ()) % (tunnels.size ()/2 + 1), i = 0;
 		bool skipped = false;
 		typename TTunnels::value_type tunnel = nullptr;
 		for (const auto& it: tunnels)
@@ -248,7 +248,7 @@ namespace tunnel
 		}
 		if (!tunnel && skipped)
 		{
-			ind = i2p::tunnel::tunnels.GetRng ()() % (tunnels.size ()/2 + 1), i = 0;
+			ind = (m_LocalDestination ? m_LocalDestination->GetRng ()() : rand ()) % (tunnels.size ()/2 + 1), i = 0;
 			for (const auto& it: tunnels)
 			{
 				if (it->IsEstablished () && it != excluded)
