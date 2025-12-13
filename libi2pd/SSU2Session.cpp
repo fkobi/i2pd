@@ -1838,14 +1838,20 @@ namespace transport
 						if (i2p::context.GetTesting ())
 							i2p::context.SetError (eRouterErrorSymmetricNAT);
 						else if (m_State == eSSU2SessionStatePeerTest)
+						{
 							i2p::context.SetError (eRouterErrorFullConeNAT);
+							i2p::context.UpdatePort((int)ep.port ());
+						}
 					}
 					else
 					{
 						if (i2p::context.GetTestingV6 ())
 							i2p::context.SetErrorV6 (eRouterErrorSymmetricNAT);
 						else if (m_State == eSSU2SessionStatePeerTest)
+						{
 							i2p::context.SetErrorV6 (eRouterErrorFullConeNAT);
+							i2p::context.UpdatePort((int)ep.port ());
+						}
 					}
 				}
 				else
