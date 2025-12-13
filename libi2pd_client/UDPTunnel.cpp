@@ -52,6 +52,7 @@ namespace client
 					replyOptions.Put (UDP_SESSION_ACKED, m_LastSession->m_LastReceivedPacketNum);
 					m_LastSession->m_Destination->SendDatagram(m_LastSession->GetDatagramSession (),
 						nullptr, 0, m_LastSession->LocalPort, m_LastSession->RemotePort, &replyOptions); // Ack only, no payload
+					m_LastSession->LastRepliableDatagramTime = i2p::util::GetMillisecondsSinceEpoch ();		
 				}
 			}	
 			if (options->Get (UDP_SESSION_ACKED, seqn))
@@ -221,7 +222,7 @@ namespace client
 		m_Destination(localDestination->GetDatagramDestination()),
 		IPSocket(localDestination->GetService(), localEndpoint), Identity (to), 
 		SendEndpoint(endpoint), LastActivity(i2p::util::GetMillisecondsSinceEpoch()),
-		LocalPort(ourPort), RemotePort(theirPort)
+		LastRepliableDatagramTime (0), LocalPort(ourPort), RemotePort(theirPort)
 	{
 		Start ();
 		IPSocket.set_option (boost::asio::socket_base::receive_buffer_size (I2P_UDP_MAX_MTU ));
@@ -250,8 +251,8 @@ namespace client
 			auto ts = i2p::util::GetMillisecondsSinceEpoch();
 			auto session = GetDatagramSession ();
 			uint64_t repliableDatagramInterval = I2P_UDP_REPLIABLE_DATAGRAM_INTERVAL;
-			if (m_RTT >= 10) repliableDatagramInterval = m_RTT/10; // 1 ms min
-			if (ts > LastActivity + repliableDatagramInterval)
+			if (m_RTT >= I2P_UDP_REPLIABLE_DATAGRAM_INTERVAL && m_RTT < I2P_UDP_REPLIABLE_DATAGRAM_INTERVAL*10) repliableDatagramInterval = m_RTT/10; // 10 - 100 ms
+			if (ts > LastRepliableDatagramTime + repliableDatagramInterval)
 			{
 				if (session->GetVersion () == i2p::datagram::eDatagramV3)
 				{	
@@ -274,6 +275,7 @@ namespace client
 				}
 				else
 					m_Destination->SendDatagram(session, m_Buffer, len, LocalPort, RemotePort);
+				LastRepliableDatagramTime = ts;
 			}	
 			else
 				m_Destination->SendRawDatagram(session, m_Buffer, len, LocalPort, RemotePort);
@@ -377,7 +379,8 @@ namespace client
 		UDPConnection (localDestination->GetService ()),
 		m_Name (name), m_RemoteDest (remoteDest), m_LocalDest (localDestination), m_LocalEndpoint (localEndpoint),
 		m_ResolveThread (nullptr), m_LocalSocket (nullptr), RemotePort (remotePort),
-		m_LastPort (0), m_cancel_resolve (false), m_Gzip (gzip), m_DatagramVersion (datagramVersion)
+		m_LastPort (0), m_cancel_resolve (false), m_Gzip (gzip), m_DatagramVersion (datagramVersion),
+		m_LastRepliableDatagramTime (0)
 	{
 	}
 
@@ -486,8 +489,8 @@ namespace client
 		LogPrint (eLogDebug, "UDP Client: Send ", transferred, " to ", m_RemoteAddr->identHash.ToBase32 (), ":", RemotePort);
 		auto session = GetDatagramSession ();
 		uint64_t repliableDatagramInterval = I2P_UDP_REPLIABLE_DATAGRAM_INTERVAL;
-		if (m_RTT >= 10) repliableDatagramInterval = m_RTT/10; // 1 ms min
-		if (ts > m_LastSession->second + repliableDatagramInterval)
+		if (m_RTT >= I2P_UDP_REPLIABLE_DATAGRAM_INTERVAL && m_RTT < I2P_UDP_REPLIABLE_DATAGRAM_INTERVAL*10) repliableDatagramInterval = m_RTT/10; // 10 - 100 ms
+		if (ts > m_LastRepliableDatagramTime + repliableDatagramInterval)
 		{	
 			if (m_DatagramVersion == i2p::datagram::eDatagramV3)
 			{		
@@ -509,6 +512,7 @@ namespace client
 			}
 			else
 				m_LocalDest->GetDatagramDestination ()->SendDatagram (session, m_RecvBuff, transferred, remotePort, RemotePort);
+			m_LastRepliableDatagramTime = ts;
 		}	
 		else
 			m_LocalDest->GetDatagramDestination ()->SendRawDatagram (session, m_RecvBuff, transferred, remotePort, RemotePort);
@@ -593,6 +597,7 @@ namespace client
 					replyOptions.Put (UDP_SESSION_ACKED, m_LastReceivedPacketNum);
 					m_LocalDest->GetDatagramDestination ()->SendDatagram (GetDatagramSession (),
 						nullptr, 0, m_LastPort, RemotePort, &replyOptions); // Ack only, no payload
+					m_LastRepliableDatagramTime = i2p::util::GetMillisecondsSinceEpoch ();
 				}
 				if (options->Get (UDP_SESSION_ACKED, seqn))
 					Acked (seqn);

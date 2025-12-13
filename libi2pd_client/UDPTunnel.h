@@ -66,7 +66,7 @@ namespace client
 		i2p::data::IdentHash Identity;
 		boost::asio::ip::udp::endpoint FromEndpoint;
 		boost::asio::ip::udp::endpoint SendEndpoint;
-		uint64_t LastActivity;
+		uint64_t LastActivity, LastRepliableDatagramTime; // milliseconds
 
 		uint16_t LocalPort;
 		uint16_t RemotePort;
@@ -212,6 +212,7 @@ namespace client
 			i2p::datagram::DatagramVersion m_DatagramVersion;
 			std::shared_ptr<UDPConvo> m_LastSession;
 			std::weak_ptr<i2p::datagram::DatagramSession> m_LastDatagramSession;
+			uint64_t m_LastRepliableDatagramTime; // millseconds
 			
 		public:
 
