@@ -1831,7 +1831,8 @@ namespace transport
 				bool isV4 = ep.address ().is_v4 ();
 				if (ep.port () != m_Server.GetPort (isV4))
 				{
-					LogPrint (eLogInfo, "SSU2: Our port ", ep.port (), " received from ", m_RemoteEndpoint, " is different from ", m_Server.GetPort (isV4));
+					// TODO: External port detected incorrectly.
+					// LogPrint (eLogInfo, "SSU2: Our port ", ep.port (), " received from ", m_RemoteEndpoint, " is different from ", m_Server.GetPort (isV4));
 					if (isV4)
 					{
 						if (i2p::context.GetTesting ())
