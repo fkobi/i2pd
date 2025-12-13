@@ -2444,7 +2444,9 @@ namespace transport
 												session->SendPeerTest (6, buf + offset, len - offset, addr, true);
 											}	
 											SetTestingState (false);
-											if (GetRouterStatus () != eRouterStatusFirewalled && addr->IsPeerTesting ())
+											if (i2p::context.GetError () == eRouterErrorFullConeNAT)
+												SetRouterStatus (eRouterStatusOK);
+											else if (GetRouterStatus () != eRouterStatusFirewalled && addr->IsPeerTesting ())
 											{
 												SetRouterStatus (eRouterStatusFirewalled);
 												session->SetStatusChanged ();
