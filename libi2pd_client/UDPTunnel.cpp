@@ -27,7 +27,7 @@ namespace client
 	void I2PUDPServerTunnel::HandleRecvFromI2P(const i2p::data::IdentityEx& from, uint16_t fromPort, uint16_t toPort, 
 		const uint8_t * buf, size_t len, const i2p::util::Mapping * options)
 	{
-		if (!m_LastSession || m_LastSession->Identity.GetLL()[0] != from.GetIdentHash ().GetLL()[0] || fromPort != m_LastSession->RemotePort)
+		if (!m_LastSession || m_LastSession->Identity.GetLL()[0] != from.GetIdentHash ().GetLL()[0] || (fromPort && fromPort != m_LastSession->RemotePort))
 			m_LastSession = ObtainUDPSession(from, toPort, fromPort);
 		boost::system::error_code ec;
 		if (len > 0)
