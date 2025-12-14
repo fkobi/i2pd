@@ -156,12 +156,15 @@ namespace client
 	
 	void UDPConnection::Acked (uint32_t seqn)
 	{
+		if (!m_AckTimerSeqn) seqn = m_UnackedDatagrams.back ().first;	// if we recieve ack after paht change, clear window and send new datagrams
+		m_IsFirstPacket = false;	// first packet confirmed
 		if (m_AckTimerSeqn && seqn >= m_AckTimerSeqn)
 		{
 			m_AckTimerSeqn = 0;
 			m_AckTimer.cancel ();
 		}
 		if (m_UnackedDatagrams.empty () && seqn < m_UnackedDatagrams.front ().first) return;
+		bool acknowledged = false;
 		auto it = m_UnackedDatagrams.begin ();
 		while (it != m_UnackedDatagrams.end ())
 		{
@@ -170,10 +173,18 @@ namespace client
 			{	
 				auto rtt = i2p::util::GetMillisecondsSinceEpoch () - it->second;
 				m_RTT = m_RTT ? (m_RTT + rtt)/2 : rtt;
+				acknowledged = true;
 			}	
 			it++;
 		}	
 		m_UnackedDatagrams.erase (m_UnackedDatagrams.begin (), it);
+		m_IsSendingAllowed = true; // if we recieve ack after path change, now can send new datagrams
+		if (acknowledged && !m_UnackedDatagrams.empty ())
+		{
+			m_AckTimer.cancel ();
+			m_AckTimerSeqn = 0;
+			ScheduleAckTimer (m_UnackedDatagrams.back ().first);
+		}
 	}	
 
 	void UDPConnection::ScheduleAckTimer (uint32_t seqn)
@@ -187,9 +198,11 @@ namespace client
 					if (ecode != boost::asio::error::operation_aborted)
 					{
 						LogPrint (eLogInfo, "UDP Connection: Packet ", m_AckTimerSeqn, " was not acked");
-						DeleteExpiredUnackedDatagrams ();
+//						DeleteExpiredUnackedDatagrams ();
+						m_IsSendingAllowed = false; // stop sending datagrams
 						m_AckTimerSeqn = 0;
 						m_RTT = 0;
+						if (!m_UnackedDatagrams.empty ()) ScheduleAckTimer (0); // try again if failed
 						// send empty packet with reset path flag
 						i2p::util::Mapping options;
 						options.Put (UDP_SESSION_FLAGS, UDP_SESSION_FLAG_RESET_PATH | UDP_SESSION_FLAG_ACK_REQUESTED);
@@ -465,7 +478,7 @@ namespace client
 			RecvFromLocal ();
 			return; // drop, remote not resolved
 		}
-		if (!m_UnackedDatagrams.empty () && m_NextSendPacketNum > m_UnackedDatagrams.front ().first + I2P_UDP_MAX_NUM_UNACKED_DATAGRAMS)
+		if ((!m_UnackedDatagrams.empty () && m_NextSendPacketNum > m_UnackedDatagrams.front ().first + I2P_UDP_MAX_NUM_UNACKED_DATAGRAMS) || !m_IsSendingAllowed)
 		{
 			// window is full, drop packet
 			RecvFromLocal ();
@@ -513,6 +526,7 @@ namespace client
 			else
 				m_LocalDest->GetDatagramDestination ()->SendDatagram (session, m_RecvBuff, transferred, remotePort, RemotePort);
 			m_LastRepliableDatagramTime = ts;
+			if (m_IsFirstPacket) m_IsSendingAllowed = false; // send only one packet at the start and wait ack
 		}	
 		else
 			m_LocalDest->GetDatagramDestination ()->SendRawDatagram (session, m_RecvBuff, transferred, remotePort, RemotePort);

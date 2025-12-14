@@ -44,7 +44,9 @@ namespace client
 	
 		boost::asio::deadline_timer m_AckTimer;
 		uint32_t m_AckTimerSeqn = 0;
-
+		bool m_IsSendingAllowed = true;
+		bool m_IsFirstPacket = true;
+	
 		UDPConnection (boost::asio::io_context& service): m_AckTimer (service) {};
 		virtual ~UDPConnection () { Stop (); };
 		virtual void Start () {};
