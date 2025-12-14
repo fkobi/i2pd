@@ -1831,20 +1831,27 @@ namespace transport
 				bool isV4 = ep.address ().is_v4 ();
 				if (ep.port () != m_Server.GetPort (isV4))
 				{
-					LogPrint (eLogInfo, "SSU2: Our port ", ep.port (), " received from ", m_RemoteEndpoint, " is different from ", m_Server.GetPort (isV4));
+					// TODO: External port detected incorrectly.
+					// LogPrint (eLogInfo, "SSU2: Our port ", ep.port (), " received from ", m_RemoteEndpoint, " is different from ", m_Server.GetPort (isV4));
 					if (isV4)
 					{
 						if (i2p::context.GetTesting ())
 							i2p::context.SetError (eRouterErrorSymmetricNAT);
 						else if (m_State == eSSU2SessionStatePeerTest)
+						{
 							i2p::context.SetError (eRouterErrorFullConeNAT);
+							i2p::context.UpdatePort((int)ep.port ());
+						}
 					}
 					else
 					{
 						if (i2p::context.GetTestingV6 ())
 							i2p::context.SetErrorV6 (eRouterErrorSymmetricNAT);
 						else if (m_State == eSSU2SessionStatePeerTest)
+						{
 							i2p::context.SetErrorV6 (eRouterErrorFullConeNAT);
+							i2p::context.UpdatePort((int)ep.port ());
+						}
 					}
 				}
 				else
@@ -2437,7 +2444,9 @@ namespace transport
 												session->SendPeerTest (6, buf + offset, len - offset, addr, true);
 											}	
 											SetTestingState (false);
-											if (GetRouterStatus () != eRouterStatusFirewalled && addr->IsPeerTesting ())
+											if (i2p::context.GetError () == eRouterErrorFullConeNAT)
+												SetRouterStatus (eRouterStatusOK);
+											else if (GetRouterStatus () != eRouterStatusFirewalled && addr->IsPeerTesting ())
 											{
 												SetRouterStatus (eRouterStatusFirewalled);
 												session->SetStatusChanged ();
