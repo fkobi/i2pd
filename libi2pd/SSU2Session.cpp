@@ -1838,8 +1838,9 @@ namespace transport
 							i2p::context.SetError (eRouterErrorSymmetricNAT);
 						else if (m_State == eSSU2SessionStatePeerTest)
 						{
-							i2p::context.SetError (eRouterErrorFullConeNAT);
-							i2p::context.UpdatePort((int)ep.port ());
+							i2p::context.SetError (eRouterErrorFullConeNAT); // TODO: Full-Cone NAT detection isn't working.
+							// i2p::context.PublishNTCP2Address (TCP_PORT, true, true, false, false); // TODO: TCP_PORT to be filled similar to ep.port()
+							i2p::context.PublishSSU2Address (ep.port(), true, true, false);
 						}
 					}
 					else
@@ -1849,7 +1850,8 @@ namespace transport
 						else if (m_State == eSSU2SessionStatePeerTest)
 						{
 							i2p::context.SetErrorV6 (eRouterErrorFullConeNAT);
-							i2p::context.UpdatePort((int)ep.port ());
+							// i2p::context.PublishNTCP2Address (TCP_PORT, true, false, true, false); // TODO: TCP_PORT to be filled similar to ep.port()
+							i2p::context.PublishSSU2Address (ep.port(), true, false, true);
 						}
 					}
 				}
