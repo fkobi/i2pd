@@ -168,6 +168,13 @@ namespace data
 
 		private:
 
+			i2p::util::MemoryPoolMt<RouterInfo::Buffer> m_RouterInfoBuffersPool;
+			i2p::util::MemoryPoolMt<RouterInfo::Address> m_RouterInfoAddressesPool;
+			i2p::util::MemoryPoolMt<RouterInfo::Addresses> m_RouterInfoAddressVectorsPool;
+			i2p::util::MemoryPoolMt<Lease> m_LeasesPool;
+			i2p::util::MemoryPoolMt<IdentityEx> m_IdentitiesPool;
+			i2p::util::MemoryPoolMt<RouterProfile> m_RouterProfilesPool;
+
 			mutable std::mutex m_LeaseSetsMutex;
 			std::unordered_map<IdentHash, std::shared_ptr<LeaseSet> > m_LeaseSets;
 			mutable std::mutex m_RouterInfosMutex;
@@ -192,13 +199,6 @@ namespace data
 			std::vector<std::shared_ptr<const RouterInfo> > m_ExploratorySelection;
 			uint64_t m_LastExploratorySelectionUpdateTime; // in monotonic seconds
 			std::mt19937 m_Rng;
-
-			i2p::util::MemoryPoolMt<RouterInfo::Buffer> m_RouterInfoBuffersPool;
-			i2p::util::MemoryPoolMt<RouterInfo::Address> m_RouterInfoAddressesPool;
-			i2p::util::MemoryPoolMt<RouterInfo::Addresses> m_RouterInfoAddressVectorsPool;
-			i2p::util::MemoryPoolMt<Lease> m_LeasesPool;
-			i2p::util::MemoryPoolMt<IdentityEx> m_IdentitiesPool;
-			i2p::util::MemoryPoolMt<RouterProfile> m_RouterProfilesPool;
 	};
 
 	extern NetDb netdb;
