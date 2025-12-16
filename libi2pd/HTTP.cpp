@@ -536,21 +536,32 @@ namespace http
 		return ptr;
 	}
 
-	std::string UrlDecode(std::string_view data, bool allow_null)
+	std::string UrlDecode(std::string_view url, bool allow_null)
 	{
-		std::string decoded(data);
-		size_t pos = 0;
-		while ((pos = decoded.find('%', pos)) != std::string::npos)
+		std::string decoded;
+		decoded.reserve (url.length ());
+		size_t start = 0;
+		for (size_t i = 0; i < url.length (); i++)
 		{
-			char c = std::stol(decoded.substr(pos + 1, 2), nullptr, 16);
-			if (!c && !allow_null)
+			auto c = url[i];
+			if (c == '%')
 			{
-				pos += 3;
-				continue;
+				decoded.append (url, start, i - start); 
+				if (i + 2 <= url.length ())
+				{
+					char ch;
+					auto res = std::from_chars(url.data() + i + 1, url.data() + i + 3, ch, 16);
+					if (res.ec == std::errc())
+						decoded += ch;
+					i += 2;
+					start = i + 1;
+				}	
+				else
+					break;
 			}
-			decoded.replace(pos, 3, 1, c);
-			pos++;
 		}
+		if (start < url.length ())
+			decoded.append (url, start);
 		return decoded;
 	}
 

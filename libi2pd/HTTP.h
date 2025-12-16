@@ -160,7 +160,7 @@ namespace http
 	 * @param null If set to true - decode also %00 sequence, otherwise - skip
 	 * @return Decoded string
 	 */
-	std::string UrlDecode(std::string_view data, bool null = false);
+	std::string UrlDecode(std::string_view url, bool null = false);
 
 	/**
 	 * @brief Merge HTTP response content with Transfer-Encoding: chunked
