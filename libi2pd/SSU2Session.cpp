@@ -1831,16 +1831,16 @@ namespace transport
 				bool isV4 = ep.address ().is_v4 ();
 				if (ep.port () != m_Server.GetPort (isV4))
 				{
-					// TODO: External port detected incorrectly.
-					// LogPrint (eLogInfo, "SSU2: Our port ", ep.port (), " received from ", m_RemoteEndpoint, " is different from ", m_Server.GetPort (isV4));
+					LogPrint (eLogInfo, "SSU2: Our port ", ep.port (), " received from ", m_RemoteEndpoint, " is different from ", m_Server.GetPort (isV4));
 					if (isV4)
 					{
 						if (i2p::context.GetTesting ())
 							i2p::context.SetError (eRouterErrorSymmetricNAT);
 						else if (m_State == eSSU2SessionStatePeerTest)
 						{
-							i2p::context.SetError (eRouterErrorFullConeNAT);
-							i2p::context.UpdatePort((int)ep.port ());
+							i2p::context.SetError (eRouterErrorFullConeNAT); // TODO: Full-Cone NAT detection isn't working.
+							// i2p::context.PublishNTCP2Address (TCP_PORT, true, true, false, false); // TODO: TCP_PORT to be filled similar to ep.port()
+							i2p::context.PublishSSU2Address (ep.port(), true, true, false);
 						}
 					}
 					else
@@ -1850,7 +1850,8 @@ namespace transport
 						else if (m_State == eSSU2SessionStatePeerTest)
 						{
 							i2p::context.SetErrorV6 (eRouterErrorFullConeNAT);
-							i2p::context.UpdatePort((int)ep.port ());
+							// i2p::context.PublishNTCP2Address (TCP_PORT, true, false, true, false); // TODO: TCP_PORT to be filled similar to ep.port()
+							i2p::context.PublishSSU2Address (ep.port(), true, false, true);
 						}
 					}
 				}
