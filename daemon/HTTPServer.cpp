@@ -1617,7 +1617,8 @@ namespace http {
 			if (newSocket) newSocket->close();
 			LogPrint(eLogError, "HTTP Server: Error handling accept: ", ecode.message());
 		}
-		Accept ();
+		if (m_IsRunning)
+			Accept ();
 	}
 
 	void HTTPServer::CreateConnection(std::shared_ptr<boost::asio::ip::tcp::socket> newSocket)
