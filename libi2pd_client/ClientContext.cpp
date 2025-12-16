@@ -654,7 +654,7 @@ namespace client
 							localDestination = m_SharedLocalDestination;
 
 						bool gzip = section.second.get (I2P_CLIENT_TUNNEL_GZIP, true);
-						int datagramVersion = (i2p::datagram::DatagramVersion)section.second.get (UDP_CLIENT_TUNNEL_DATAGRAM_VERSION, (int)i2p::datagram::eDatagramV1);
+						int datagramVersion = (i2p::datagram::DatagramVersion)section.second.get (UDP_CLIENT_TUNNEL_DATAGRAM_VERSION, (int)i2p::datagram::eDatagramV3);
 						auto clientTunnel = std::make_shared<I2PUDPClientTunnel> (name, dest, end, 
 							localDestination, destinationPort, gzip, (i2p::datagram::DatagramVersion)datagramVersion);
 
