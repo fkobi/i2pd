@@ -69,7 +69,7 @@ namespace garlic
 
 			i2p::data::Tag<64> m_SessionTagKeyData;
 			uint8_t m_SessTagConstant[32], m_SymmKeyCK[32], m_CurrentSymmKeyCK[64], m_NextRootKey[32];
-			int m_NextIndex, m_NextSymmKeyIndex;
+			int m_NextIndex = 0, m_NextSymmKeyIndex = 0;
 			std::unordered_map<int, i2p::data::Tag<32> > m_ItermediateSymmKeys;
 
 			int m_TagSetID = 0;
