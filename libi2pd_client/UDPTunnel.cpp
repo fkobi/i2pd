@@ -169,7 +169,7 @@ namespace client
 		while (it != m_UnackedDatagrams.end ())
 		{
 			if (it->first > seqn) break;
-			if (it->first == seqn)
+			 if (it->first == seqn && m_IsSendingAllowed) // ignore first ack after path change
 			{	
 				auto rtt = i2p::util::GetMillisecondsSinceEpoch () - it->second;
 				m_RTT = m_RTT ? (m_RTT + rtt)/2 : rtt;
