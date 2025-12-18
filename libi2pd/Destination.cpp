@@ -55,7 +55,11 @@ namespace client
 				LogPrint (eLogInfo, "Destination: Parameters for tunnel set to: ", inQty, " inbound (", inLen, " hops), ", outQty, " outbound (", outLen, " hops), ", numTags, " tags");
 				int ratchetsInboundTags = 0;
 				if (params->Get (I2CP_PARAM_RATCHET_INBOUND_TAGS, ratchetsInboundTags))
+				{
+					if (ratchetsInboundTags && ratchetsInboundTags < i2p::garlic::ECIESX25519_MIN_NUM_GENERATED_TAGS)
+						ratchetsInboundTags = i2p::garlic::ECIESX25519_MIN_NUM_GENERATED_TAGS;
 					SetNumRatchetInboundTags (ratchetsInboundTags);
+				}	
 				auto explicitPeersStr = (*params)[I2CP_PARAM_EXPLICIT_PEERS];
 				if (!explicitPeersStr.empty ())
 				{
@@ -1358,7 +1362,11 @@ namespace client
 		i2p::datagram::DatagramVersion version)
 	{
 		if (!m_DatagramDestination)
+		{	
+			if (!GetNumRatchetInboundTags ())
+				SetNumRatchetInboundTags (i2p::garlic::ECIESX25519_MAX_NUM_GENERATED_TAGS); // set max tags if not specified
 			m_DatagramDestination = new i2p::datagram::DatagramDestination (GetSharedFromThis (), gzip, version);
+		}	
 		return m_DatagramDestination;
 	}
 
