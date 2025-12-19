@@ -307,13 +307,16 @@ namespace data
 				}
 				else if (key == "v")
 				{
-					if (value == "2")
+					if (value.size () == 1 && value[0] >= '2' && value[0] <= '5') // only 2,3,4,5 allowed
+					{
+						address->v = value[0] - '0';
 						isV2 = true;
-					else
+					}	
+					else	
 					{	
 						LogPrint (eLogWarning, "RouterInfo: Unexpected value ", value, " for v");
 						address->transportStyle = eTransportUnknown; // invalid address
-					}	
+					}
 				}
 				else if (key[0] == 'i')
 				{
@@ -1437,7 +1440,7 @@ namespace data
 				WriteString ("s", properties); properties << '=';
 				WriteString (address.s.ToBase64 (), properties); properties << ';';
 				WriteString ("v", properties); properties << '=';
-				WriteString ("2", properties); properties << ';';
+				WriteString (std::to_string(address.v), properties); properties << ';';
 			}
 
 			uint16_t size = htobe16 (properties.str ().size ());
