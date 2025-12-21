@@ -549,10 +549,12 @@ namespace http
 				decoded.append (url, start, i - start); 
 				if (i + 2 <= url.length ())
 				{
-					char ch;
+					unsigned char ch;
 					auto res = std::from_chars(url.data() + i + 1, url.data() + i + 3, ch, 16);
-					if (res.ec == std::errc())
+					if (res.ec == std::errc() && (ch || allow_null))
 						decoded += ch;
+					else
+						decoded.append (url, i, 3);
 					i += 2;
 					start = i + 1;
 				}	
