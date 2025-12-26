@@ -19,6 +19,7 @@
 #include <openssl/evp.h>
 #include <boost/asio.hpp>
 #include "Crypto.h"
+#include "PostQuantum.h"
 #include "util.h"
 #include "RouterInfo.h"
 #include "TransportSession.h"
@@ -30,7 +31,7 @@ namespace transport
 
 	const size_t NTCP2_UNENCRYPTED_FRAME_MAX_SIZE = 65519;
 	const size_t NTCP2_SEND_AFTER_FRAME_SIZE = 16386; // send frame when exceeds this size
-	const size_t NTCP2_SESSION_REQUEST_MAX_SIZE = 287;
+	const size_t NTCP2_SESSION_REQUEST_MAX_SIZE = 287; // without ML-KEM frame
 	const size_t NTCP2_SESSION_CREATED_MAX_SIZE = 287;
 	const int NTCP2_MAX_PADDING_RATIO = 6; // in %
 
@@ -87,6 +88,8 @@ namespace transport
 		NTCP2Establisher ();
 		~NTCP2Establisher ();
 
+		void SetVersion (int version);
+
 		const uint8_t * GetPub () const { return m_EphemeralKeys->GetPublicKey (); };
 		const uint8_t * GetRemotePub () const { return m_RemoteEphemeralPublicKey; }; // Y for Alice and X for Bob
 		uint8_t * GetRemotePub () { return m_RemoteEphemeralPublicKey; }; // to set
@@ -116,13 +119,21 @@ namespace transport
 		bool ProcessSessionConfirmedMessagePart2 (uint8_t * m3p2Buf);
 
 		std::shared_ptr<i2p::crypto::X25519Keys> m_EphemeralKeys;
+		i2p::data::CryptoKeyType m_CryptoType;
 		uint8_t m_RemoteEphemeralPublicKey[32]; // x25519
 		uint8_t m_RemoteStaticKey[32], m_IV[16];
 		i2p::data::IdentHash m_RemoteIdentHash;
 		uint16_t m3p2Len;
 
+#if OPENSSL_PQ
+        std::unique_ptr<i2p::crypto::MLKEMKeys> m_PQKeys;
+        uint8_t m_SessionRequestBuffer[NTCP2_SESSION_REQUEST_MAX_SIZE + i2p::crypto::MLKEM1024_KEY_LENGTH + 16],
+			m_SessionCreatedBuffer[NTCP2_SESSION_CREATED_MAX_SIZE + i2p::crypto::MLKEM1024_KEY_LENGTH + 16],
+#else
 		uint8_t m_SessionRequestBuffer[NTCP2_SESSION_REQUEST_MAX_SIZE],
-			m_SessionCreatedBuffer[NTCP2_SESSION_CREATED_MAX_SIZE], * m_SessionConfirmedBuffer;
+			m_SessionCreatedBuffer[NTCP2_SESSION_CREATED_MAX_SIZE],
+#endif
+            * m_SessionConfirmedBuffer;
 		size_t m_SessionRequestBufferLen, m_SessionCreatedBufferLen;
 
 	};
@@ -155,7 +166,7 @@ namespace transport
 			void SendLocalRouterInfo (bool update) override; // after handshake or by update
 			void SendI2NPMessages (std::list<std::shared_ptr<I2NPMessage> >& msgs) override;
 			void MoveSendQueue (std::shared_ptr<NTCP2Session> other);
-			
+
 		private:
 
 			void Established ();
@@ -182,7 +193,7 @@ namespace transport
 			void HandleSessionConfirmedReceived (const boost::system::error_code& ecode, std::size_t bytes_transferred);
 			void ProcessSessionConfirmed ();
 			void EstablishSessionAfterSessionConfirmed (std::shared_ptr<std::vector<uint8_t> > buf, size_t size);
-			
+
 			// data
 			void ReceiveLength ();
 			void HandleReceivedLength (const boost::system::error_code& ecode, std::size_t bytes_transferred);
@@ -234,10 +245,10 @@ namespace transport
 			bool m_IsSending, m_IsReceiving;
 			std::list<std::shared_ptr<I2NPMessage> > m_SendQueue;
 			uint64_t m_NextRouterInfoResendTime; // seconds since epoch
-			
+
 			std::list<std::shared_ptr<I2NPMessage> > m_IntermediateQueue; // from transports
 			mutable std::mutex m_IntermediateQueueMutex;
-			
+
 			uint16_t m_PaddingSizes[16];
 			int m_NextPaddingSize;
 	};
@@ -255,7 +266,7 @@ namespace transport
 					void Start () { StartIOService (); };
 					void Stop () { StopIOService (); };
 			};
-			
+
 		public:
 
 			enum ProxyType
@@ -264,7 +275,7 @@ namespace transport
 				eSocksProxy,
 				eHTTPProxy
 			};
-			
+
 			NTCP2Server ();
 			~NTCP2Server ();
 
@@ -273,11 +284,11 @@ namespace transport
 			auto& GetService () { return GetIOService (); };
 			auto& GetEstablisherService () { return m_EstablisherService.GetService (); };
 			std::mt19937& GetRng () { return m_Rng; };
-			void AEADChaCha20Poly1305Encrypt (const std::vector<std::pair<uint8_t *, size_t> >& bufs, 
+			void AEADChaCha20Poly1305Encrypt (const std::vector<std::pair<uint8_t *, size_t> >& bufs,
 				const uint8_t * key, const uint8_t * nonce, uint8_t * mac);
 			bool AEADChaCha20Poly1305Decrypt (const uint8_t * msg, size_t msgLen, const uint8_t * ad, size_t adLen,
-				const uint8_t * key, const uint8_t * nonce, uint8_t * buf, size_t len); 
-			
+				const uint8_t * key, const uint8_t * nonce, uint8_t * buf, size_t len);
+
 
 			bool AddNTCP2Session (std::shared_ptr<NTCP2Session> session, bool incoming = false);
 			void RemoveNTCP2Session (std::shared_ptr<NTCP2Session> session);
@@ -298,7 +309,7 @@ namespace transport
 
 			void HandleConnect (const boost::system::error_code& ecode, std::shared_ptr<NTCP2Session> conn, std::shared_ptr<boost::asio::deadline_timer> timer);
 			void HandleProxyConnect(const boost::system::error_code& ecode, std::shared_ptr<NTCP2Session> conn, std::shared_ptr<boost::asio::deadline_timer> timer);
-			
+
 			// timer
 			void ScheduleTermination ();
 			void HandleTerminationTimer (const boost::system::error_code& ecode);
@@ -315,13 +326,13 @@ namespace transport
 			uint16_t m_ProxyPort;
 			boost::asio::ip::tcp::resolver m_Resolver;
 			std::unique_ptr<boost::asio::ip::tcp::endpoint> m_ProxyEndpoint;
-			
+
 			std::shared_ptr<boost::asio::ip::tcp::endpoint> m_Address4, m_Address6, m_YggdrasilAddress;
 			std::mt19937 m_Rng;
 			EstablisherService m_EstablisherService;
 			i2p::crypto::AEADChaCha20Poly1305Encryptor m_Encryptor;
 			i2p::crypto::AEADChaCha20Poly1305Decryptor m_Decryptor;
-			
+
 		public:
 
 			// for HTTP/I2PControl
