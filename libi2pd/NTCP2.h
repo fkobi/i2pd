@@ -107,6 +107,7 @@ namespace transport
 		bool KeyDerivationFunction1 (const uint8_t * pub, i2p::crypto::X25519Keys& priv, const uint8_t * rs, const uint8_t * epub); // for SessionRequest, (pub, priv) for DH
 		bool KeyDerivationFunction2 (const uint8_t * epub); // for SessionCreate
 		void CreateEphemeralKey ();
+		void ApplyPadding (uint8_t * padding, size_t paddingLength);
 
 		bool CreateSessionRequestMessage (std::mt19937& rng);
 		bool CreateSessionCreatedMessage (std::mt19937& rng);
@@ -119,6 +120,7 @@ namespace transport
 		bool ProcessSessionConfirmedMessagePart2 (uint8_t * m3p2Buf);
 
 		std::shared_ptr<i2p::crypto::X25519Keys> m_EphemeralKeys;
+		int m_Version;
 		i2p::data::CryptoKeyType m_CryptoType;
 		uint8_t m_RemoteEphemeralPublicKey[32]; // x25519
 		uint8_t m_RemoteStaticKey[32], m_IV[16];
@@ -128,7 +130,7 @@ namespace transport
 #if OPENSSL_PQ
         std::unique_ptr<i2p::crypto::MLKEMKeys> m_PQKeys;
         uint8_t m_SessionRequestBuffer[NTCP2_SESSION_REQUEST_MAX_SIZE + i2p::crypto::MLKEM1024_KEY_LENGTH + 16],
-			m_SessionCreatedBuffer[NTCP2_SESSION_CREATED_MAX_SIZE + i2p::crypto::MLKEM1024_KEY_LENGTH + 16],
+			m_SessionCreatedBuffer[NTCP2_SESSION_CREATED_MAX_SIZE +  i2p::crypto::MLKEM1024_CIPHER_TEXT_LENGTH + 16],
 #else
 		uint8_t m_SessionRequestBuffer[NTCP2_SESSION_REQUEST_MAX_SIZE],
 			m_SessionCreatedBuffer[NTCP2_SESSION_CREATED_MAX_SIZE],
