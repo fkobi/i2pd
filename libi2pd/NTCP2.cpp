@@ -94,13 +94,8 @@ namespace transport
 		return KeyDerivationFunction1 (GetRemotePub (), i2p::context.GetNTCP2StaticKeys (), i2p::context.GetNTCP2StaticPublicKey (), GetRemotePub ());
 	}
 
-	bool NTCP2Establisher::KeyDerivationFunction2 (const uint8_t * sessionRequest, size_t sessionRequestLen, const uint8_t * epub)
+	bool NTCP2Establisher::KeyDerivationFunction2 (const uint8_t * epub)
 	{
-		MixHash (sessionRequest + 32, 32); // encrypted payload
-
-		int paddingLength = sessionRequestLen - 64;
-		if (paddingLength > 0)
-			MixHash (sessionRequest + 64, paddingLength);
 		MixHash (epub, 32);
 
 		// x25519 between remote pub and ephemaral priv
@@ -112,12 +107,17 @@ namespace transport
 
 	bool NTCP2Establisher::KDF2Alice ()
 	{
-		return KeyDerivationFunction2 (m_SessionRequestBuffer, m_SessionRequestBufferLen, GetRemotePub ());
+		return KeyDerivationFunction2 (GetRemotePub ());
 	}
 
 	bool NTCP2Establisher::KDF2Bob ()
 	{
-		return KeyDerivationFunction2 (m_SessionRequestBuffer, m_SessionRequestBufferLen, GetPub ());
+        // padding is not known in ProcessSessionRequestMessage
+        int paddingLength = m_SessionRequestBufferLen - 64;
+		if (paddingLength > 0)
+			MixHash (m_SessionRequestBuffer + 64, paddingLength);
+
+		return KeyDerivationFunction2 (GetPub ());
 	}
 
 	bool NTCP2Establisher::KDF3Alice ()
@@ -209,9 +209,14 @@ namespace transport
 			LogPrint (eLogWarning, "NTCP2: SessionRequest options frame AEAD encryption failed");
 			return false;
 		}
+		MixHash (m_SessionRequestBuffer + offset, 32);
 		offset += 32;
         // padding
-		RAND_bytes (m_SessionRequestBuffer + offset, paddingLength);
+        if (paddingLength)
+        {
+            RAND_bytes (m_SessionRequestBuffer + offset, paddingLength);
+            MixHash (m_SessionRequestBuffer + offset, paddingLength);
+		}
 		m_SessionRequestBufferLen = offset + paddingLength;
 		// create m3p2 payload (RouterInfo block) for SessionConfirmed
 		m_SessionConfirmedBuffer = new uint8_t[m3p2Len + 48]; // m3p1 is 48 bytes
@@ -301,6 +306,7 @@ namespace transport
 		uint8_t options[16];
 		if (Decrypt (m_SessionRequestBuffer + 32, options, 16))
 		{
+            MixHash (m_SessionRequestBuffer + 32, 32);
 			// options
 			if (options[0] && options[0] != i2p::context.GetNetID ())
 			{
@@ -311,6 +317,7 @@ namespace transport
 			{
 				paddingLen = bufbe16toh (options + 2);
 				m_SessionRequestBufferLen = paddingLen + 64;
+				// actual padding is not known yet, apply MixHash later in KDF2Bob
 				m3p2Len = bufbe16toh (options + 4);
 				if (m3p2Len < 16)
 				{
@@ -652,7 +659,7 @@ namespace transport
 		}
 		else
 		{
-			boost::asio::post (m_Server.GetEstablisherService (),
+            boost::asio::post (m_Server.GetEstablisherService (),
 				[s = shared_from_this ()] ()
 				{
 					s->SendSessionCreated ();

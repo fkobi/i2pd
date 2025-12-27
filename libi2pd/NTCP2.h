@@ -105,7 +105,7 @@ namespace transport
 		bool KDF3Bob ();
 
 		bool KeyDerivationFunction1 (const uint8_t * pub, i2p::crypto::X25519Keys& priv, const uint8_t * rs, const uint8_t * epub); // for SessionRequest, (pub, priv) for DH
-		bool KeyDerivationFunction2 (const uint8_t * sessionRequest, size_t sessionRequestLen, const uint8_t * epub); // for SessionCreate
+		bool KeyDerivationFunction2 (const uint8_t * epub); // for SessionCreate
 		void CreateEphemeralKey ();
 
 		bool CreateSessionRequestMessage (std::mt19937& rng);
