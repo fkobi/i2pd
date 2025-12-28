@@ -681,11 +681,11 @@ namespace transport
 		}
 		else
 		{
-            if (bytes_transferred < m_Establisher->m_SessionRequestBufferLen)
-                m_Establisher->ApplyPadding (m_Establisher->m_SessionRequestBuffer + m_Establisher->m_SessionRequestBufferLen - bytes_transferred, bytes_transferred);
             boost::asio::post (m_Server.GetEstablisherService (),
-				[s = shared_from_this ()] ()
+				[s = shared_from_this (), paddingLength = bytes_transferred] ()
 				{
+                    if (paddingLength < s->m_Establisher->m_SessionRequestBufferLen)
+                        s->m_Establisher->ApplyPadding (s->m_Establisher->m_SessionRequestBuffer + s->m_Establisher->m_SessionRequestBufferLen - paddingLength, paddingLength);
 					s->SendSessionCreated ();
 				});
 		}
@@ -762,11 +762,11 @@ namespace transport
 		}
 		else
 		{
-            m_Establisher->ApplyPadding (m_Establisher->m_SessionCreatedBuffer + m_Establisher->m_SessionCreatedBufferLen, bytes_transferred);
-			m_Establisher->m_SessionCreatedBufferLen += bytes_transferred;
 			boost::asio::post (m_Server.GetEstablisherService (),
-				[s = shared_from_this ()] ()
+				[s = shared_from_this (), paddingLength = bytes_transferred] ()
 				{
+                    s->m_Establisher->ApplyPadding (s->m_Establisher->m_SessionCreatedBuffer + s->m_Establisher->m_SessionCreatedBufferLen, paddingLength);
+                    s->m_Establisher->m_SessionCreatedBufferLen += paddingLength;
 					s->SendSessionConfirmed ();
 				});
 		}
